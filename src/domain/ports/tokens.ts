@@ -1,0 +1,4 @@
+export const OPERATION_REPOSITORY = Symbol('OPERATION_REPOSITORY');
+export const WALLET_REPOSITORY = Symbol('WALLET_REPOSITORY');
+export const PAYMENT_PROVIDER = Symbol('PAYMENT_PROVIDER');
+export const LOCK_PROVIDER = Symbol('LOCK_PROVIDER');

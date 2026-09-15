@@ -1,0 +1,27 @@
+{
+  "moduleFileExtensions": ["js", "json", "ts"],
+  "rootDir": "..",
+  "testEnvironment": "node",
+  "testRegex": ".e2e-spec.ts$",
+  "transform": {
+    "^.+\\.(t|j)s$": "ts-jest"
+  },
+  "transformIgnorePatterns": [
+    "/node_modules/(?!@nestjs/mongoose|@nestjs/config)"
+  ],
+  "moduleNameMapper": {
+    "^@application/(.*)$": "<rootDir>/src/application/$1",
+    "^@domain/(.*)$": "<rootDir>/src/domain/$1",
+    "^@infrastructure/(.*)$": "<rootDir>/src/infrastructure/$1",
+    "^@config/(.*)$": "<rootDir>/src/config/$1"
+  },
+  "collectCoverageFrom": [
+    "src/**/*.ts",
+    "!src/main.ts",
+    "!src/**/*.module.ts",
+    "!src/**/*.interface.ts",
+    "!src/**/*.dto.ts",
+    "!src/**/*.spec.ts"
+  ],
+  "coverageDirectory": "./coverage"
+}

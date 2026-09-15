@@ -1,0 +1,60 @@
+version: '3.8'
+
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: ligo_cashin_app
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=development
+      - PORT=3000
+      - MONGODB_URI=mongodb://ligo_cashin_mongo:27017/wallet-cashin?retryWrites=true&w=majority
+      - REDIS_URL=redis://ligo_cashin_redis:6379
+      - LOCK_TTL_MS=10000
+      - PAYMENT_PROVIDER_BASE_URL=https://api.mock-payment-provider.com
+      - PAYMENT_PROVIDER_API_KEY=dev_secret_key_12345
+    depends_on:
+      mongo:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - ligo_network
+
+  mongo:
+    image: mongo:6.0
+    container_name: ligo_cashin_mongo
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo_data:/data/db
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - ligo_network
+
+  redis:
+    image: redis:7-alpine
+    container_name: ligo_cashin_redis
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - ligo_network
+
+networks:
+  ligo_network:
+    driver: bridge
+
+volumes:
+  mongo_data:
