@@ -1,34 +1,44 @@
 import { HandlePaymentWebhookUseCase } from './handle-payment-webhook.use-case';
-import {
-  ConcurrentOperationError,
-  OperationNotFoundError,
-} from '../errors/application.error';
+import { OperationNotFoundError } from '../errors/application.error';
 import { Operation } from '@domain/entities/operation.entity';
 import { Wallet } from '@domain/entities/wallet.entity';
 import { Amount } from '@domain/value-objects/amount.vo';
 import { IdempotencyKey } from '@domain/value-objects/idempotency-key.vo';
+import { OperationRepository } from '@domain/ports/operation.repository';
+import { WalletRepository } from '@domain/ports/wallet.repository';
+import { LockProvider, DistributedLock } from '@domain/ports/lock.provider';
 
 describe('HandlePaymentWebhookUseCase', () => {
   let useCase: HandlePaymentWebhookUseCase;
-  let mockOperationRepository: any;
-  let mockWalletRepository: any;
-  let mockLockProvider: any;
-  let mockLock: any;
+  let mockOperationRepository: jest.Mocked<OperationRepository>;
+  let mockWalletRepository: jest.Mocked<WalletRepository>;
+  let mockLockProvider: jest.Mocked<LockProvider>;
+  let mockLock: jest.Mocked<DistributedLock>;
 
   const mockTtl = 5000;
   const mockOpId = 'op_1234567890';
   const mockProviderRef = 'mock_ref_999';
 
   beforeEach(() => {
-    mockLock = { release: jest.fn().mockResolvedValue(undefined) };
-    mockLockProvider = { acquire: jest.fn().mockResolvedValue(mockLock) };
+    mockLock = {
+      resource: 'lock:resource',
+      release: jest.fn().mockResolvedValue(undefined),
+    };
+
+    mockLockProvider = {
+      acquire: jest.fn().mockResolvedValue(mockLock),
+    };
+
     mockOperationRepository = {
       findById: jest.fn(),
-      save: jest.fn().mockImplementation((op) => Promise.resolve(op)),
-    };
+      save: jest
+        .fn()
+        .mockImplementation((op: Operation) => Promise.resolve(op)),
+    } as unknown as jest.Mocked<OperationRepository>;
+
     mockWalletRepository = {
       findByUserId: jest.fn(),
-      save: jest.fn().mockImplementation((w) => Promise.resolve(w)),
+      save: jest.fn().mockImplementation((w: Wallet) => Promise.resolve(w)),
     };
 
     useCase = new HandlePaymentWebhookUseCase(
@@ -63,7 +73,10 @@ describe('HandlePaymentWebhookUseCase', () => {
 
     expect(result.status).toBe('COMPLETED');
     expect(result.credited).toBe(true);
+
+    // eslint-disable-next-line @typescript-eslint/unbound-method
     expect(mockWalletRepository.save).toHaveBeenCalled();
+    // eslint-disable-next-line @typescript-eslint/unbound-method
     expect(mockLock.release).toHaveBeenCalled();
   });
 
@@ -88,7 +101,10 @@ describe('HandlePaymentWebhookUseCase', () => {
     });
 
     expect(result.credited).toBe(false);
+
+    // eslint-disable-next-line @typescript-eslint/unbound-method
     expect(mockWalletRepository.save).not.toHaveBeenCalled();
+    // eslint-disable-next-line @typescript-eslint/unbound-method
     expect(mockLockProvider.acquire).not.toHaveBeenCalled();
   });
 
@@ -114,7 +130,10 @@ describe('HandlePaymentWebhookUseCase', () => {
 
     expect(result.status).toBe('FAILED');
     expect(result.credited).toBe(false);
+
+    // eslint-disable-next-line @typescript-eslint/unbound-method
     expect(mockWalletRepository.save).not.toHaveBeenCalled();
+    // eslint-disable-next-line @typescript-eslint/unbound-method
     expect(mockLock.release).toHaveBeenCalled();
   });
 

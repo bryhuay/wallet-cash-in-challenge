@@ -6,13 +6,16 @@ import {
 import { Operation } from '@domain/entities/operation.entity';
 import { Amount } from '@domain/value-objects/amount.vo';
 import { IdempotencyKey } from '@domain/value-objects/idempotency-key.vo';
+import { OperationRepository } from '@domain/ports/operation.repository';
+import { PaymentProvider } from '@domain/ports/payment.provider';
+import { LockProvider, DistributedLock } from '@domain/ports/lock.provider';
 
 describe('ProcessCashInUseCase', () => {
   let useCase: ProcessCashInUseCase;
-  let mockOperationRepository: any;
-  let mockPaymentProvider: any;
-  let mockLockProvider: any;
-  let mockLock: any;
+  let mockOperationRepository: jest.Mocked<OperationRepository>;
+  let mockPaymentProvider: jest.Mocked<PaymentProvider>;
+  let mockLockProvider: jest.Mocked<LockProvider>;
+  let mockLock: jest.Mocked<DistributedLock>;
 
   const mockTtl = 5000;
   const validDto = {
@@ -20,17 +23,29 @@ describe('ProcessCashInUseCase', () => {
     userId: 'usr_ligo_123',
     amount: 100,
     currency: 'PEN',
-    paymentMethod: 'DEBIT_CARD',
+    paymentMethod: 'DEBIT_CARD' as const,
   };
 
   beforeEach(() => {
-    mockLock = { release: jest.fn().mockResolvedValue(undefined) };
-    mockLockProvider = { acquire: jest.fn().mockResolvedValue(mockLock) };
+    mockLock = {
+      resource: 'lock:resource',
+      release: jest.fn().mockResolvedValue(undefined),
+    };
+
+    mockLockProvider = {
+      acquire: jest.fn().mockResolvedValue(mockLock),
+    };
+
     mockOperationRepository = {
       findByIdempotencyKey: jest.fn(),
-      save: jest.fn().mockImplementation((op) => Promise.resolve(op)),
+      save: jest
+        .fn()
+        .mockImplementation((op: Operation) => Promise.resolve(op)),
+    } as unknown as jest.Mocked<OperationRepository>;
+
+    mockPaymentProvider = {
+      initiatePayment: jest.fn(),
     };
-    mockPaymentProvider = { initiatePayment: jest.fn() };
 
     useCase = new ProcessCashInUseCase(
       mockOperationRepository,
@@ -49,12 +64,16 @@ describe('ProcessCashInUseCase', () => {
 
     const result = await useCase.execute(validDto);
 
+    // eslint-disable-next-line @typescript-eslint/unbound-method
     expect(mockLockProvider.acquire).toHaveBeenCalledWith(
       `lock:idempotency:${validDto.idempotencyKey}`,
       mockTtl,
     );
     expect(result.providerReference).toBe('mock_ref_999');
+
+    // eslint-disable-next-line @typescript-eslint/unbound-method
     expect(mockOperationRepository.save).toHaveBeenCalled();
+    // eslint-disable-next-line @typescript-eslint/unbound-method
     expect(mockLock.release).toHaveBeenCalled();
   });
 
@@ -72,7 +91,10 @@ describe('ProcessCashInUseCase', () => {
     const result = await useCase.execute(validDto);
 
     expect(result.providerReference).toBe('mock_ref_existing');
+
+    // eslint-disable-next-line @typescript-eslint/unbound-method
     expect(mockPaymentProvider.initiatePayment).not.toHaveBeenCalled();
+    // eslint-disable-next-line @typescript-eslint/unbound-method
     expect(mockLock.release).toHaveBeenCalled();
   });
 
@@ -82,6 +104,8 @@ describe('ProcessCashInUseCase', () => {
     await expect(useCase.execute(validDto)).rejects.toThrow(
       ConcurrentOperationError,
     );
+
+    // eslint-disable-next-line @typescript-eslint/unbound-method
     expect(mockOperationRepository.findByIdempotencyKey).not.toHaveBeenCalled();
   });
 
@@ -94,7 +118,10 @@ describe('ProcessCashInUseCase', () => {
     await expect(useCase.execute(validDto)).rejects.toThrow(
       PaymentProviderTimeoutError,
     );
+
+    // eslint-disable-next-line @typescript-eslint/unbound-method
     expect(mockOperationRepository.save).toHaveBeenCalled();
+    // eslint-disable-next-line @typescript-eslint/unbound-method
     expect(mockLock.release).toHaveBeenCalled();
   });
 });

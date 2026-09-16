@@ -3,8 +3,10 @@ dotenv.config();
 import { Test, TestingModule } from '@nestjs/testing';
 import { INestApplication, ValidationPipe } from '@nestjs/common';
 import * as request from 'supertest';
+import { Server } from 'http';
 import { AppModule } from '../src/app.module';
 import { GlobalExceptionFilter } from '@infrastructure/http/filters/global-exception.filter';
+import { ApiResponse } from './types/e2e-response.type';
 
 describe('Wallet Cash-In Flow & Error Scenarios (E2E)', () => {
   let app: INestApplication;
@@ -42,11 +44,11 @@ describe('Wallet Cash-In Flow & Error Scenarios (E2E)', () => {
     };
 
     it('1. Debe procesar la recarga correctamente con x-idempotency-key válida', async () => {
-      const response = await request(app.getHttpServer())
+      const response = (await request(app.getHttpServer() as unknown as Server)
         .post('/cash-in')
         .set('x-idempotency-key', validIdempotencyKey)
         .send(validPayload)
-        .expect(200); // Corregido de 201 a 200
+        .expect(200)) as unknown as ApiResponse;
 
       const data = response.body.data || response.body;
       expect(data).toHaveProperty('operation_id');
@@ -54,10 +56,10 @@ describe('Wallet Cash-In Flow & Error Scenarios (E2E)', () => {
     });
 
     it('2. Debe ser idempotente al recibir exactamente la misma x-idempotency-key', async () => {
-      const response = await request(app.getHttpServer())
+      const response = (await request(app.getHttpServer() as unknown as Server)
         .post('/cash-in')
         .set('x-idempotency-key', validIdempotencyKey)
-        .send(validPayload);
+        .send(validPayload)) as unknown as ApiResponse;
 
       expect([200, 201]).toContain(response.status);
       const data = response.body.data || response.body;
@@ -69,18 +71,20 @@ describe('Wallet Cash-In Flow & Error Scenarios (E2E)', () => {
     const validIdempotencyKey = 'a1b2c3d4-e5f6-4a5b-8c9d-0e1f2a3b4c5d';
 
     it('3. Debe retornar error de validación si falta la x-idempotency-key', async () => {
-      const res = await request(app.getHttpServer()).post('/cash-in').send({
-        user_id: 'usr_test_123',
-        amount: 100,
-        currency: 'PEN',
-        payment_method: 'card',
-      });
+      const res = (await request(app.getHttpServer() as unknown as Server)
+        .post('/cash-in')
+        .send({
+          user_id: 'usr_test_123',
+          amount: 100,
+          currency: 'PEN',
+          payment_method: 'card',
+        })) as unknown as ApiResponse;
 
       expect([400, 500]).toContain(res.status);
     });
 
     it('4. Debe retornar error si x-idempotency-key no es un UUID v4 válido', async () => {
-      const res = await request(app.getHttpServer())
+      const res = (await request(app.getHttpServer() as unknown as Server)
         .post('/cash-in')
         .set('x-idempotency-key', 'invalid-uuid')
         .send({
@@ -88,13 +92,13 @@ describe('Wallet Cash-In Flow & Error Scenarios (E2E)', () => {
           amount: 100,
           currency: 'PEN',
           payment_method: 'card',
-        });
+        })) as unknown as ApiResponse;
 
       expect([400, 500]).toContain(res.status);
     });
 
     it('5. Debe retornar 400 Bad Request si el monto es menor o igual a cero', async () => {
-      await request(app.getHttpServer())
+      await request(app.getHttpServer() as unknown as Server)
         .post('/cash-in')
         .set('x-idempotency-key', validIdempotencyKey)
         .send({
@@ -107,7 +111,7 @@ describe('Wallet Cash-In Flow & Error Scenarios (E2E)', () => {
     });
 
     it('6. Debe procesar o rechazar según la validación de moneda', async () => {
-      const res = await request(app.getHttpServer())
+      const res = (await request(app.getHttpServer() as unknown as Server)
         .post('/cash-in')
         .set('x-idempotency-key', validIdempotencyKey)
         .send({
@@ -115,9 +119,9 @@ describe('Wallet Cash-In Flow & Error Scenarios (E2E)', () => {
           amount: 100,
           currency: 'EUR',
           payment_method: 'card',
-        });
+        })) as unknown as ApiResponse;
 
-      expect([400, 200]).toContain(res.status); // Corregido de 201 a 200
+      expect([400, 200]).toContain(res.status);
     });
   });
 
@@ -125,7 +129,7 @@ describe('Wallet Cash-In Flow & Error Scenarios (E2E)', () => {
     it('7. Debe procesar un webhook exitoso y acreditar el saldo en la billetera', async () => {
       const idempotencyKey = 'f81d4fae-7dec-41d0-a765-00a0c91e6bf6';
 
-      const cashInRes = await request(app.getHttpServer())
+      const cashInRes = (await request(app.getHttpServer() as unknown as Server)
         .post('/cash-in')
         .set('x-idempotency-key', idempotencyKey)
         .send({
@@ -133,7 +137,7 @@ describe('Wallet Cash-In Flow & Error Scenarios (E2E)', () => {
           amount: 200,
           currency: 'PEN',
           payment_method: 'card',
-        });
+        })) as unknown as ApiResponse;
 
       const cashInData = cashInRes.body.data || cashInRes.body;
       const operationId = cashInData.operation_id;
@@ -142,13 +146,15 @@ describe('Wallet Cash-In Flow & Error Scenarios (E2E)', () => {
         cashInData.providerReference ||
         'ref_provider_999';
 
-      const webhookRes = await request(app.getHttpServer())
+      const webhookRes = (await request(
+        app.getHttpServer() as unknown as Server,
+      )
         .post('/webhooks/payment')
         .send({
           operation_id: operationId,
           provider_reference: providerRef,
           outcome: 'succeeded',
-        });
+        })) as unknown as ApiResponse;
 
       expect([200, 201]).toContain(webhookRes.status);
     });
@@ -156,7 +162,7 @@ describe('Wallet Cash-In Flow & Error Scenarios (E2E)', () => {
     it('8. Debe procesar un webhook fallido y marcar la operación como FAILED', async () => {
       const idempotencyKey = 'e4e8919b-7521-4f0e-9767-175591325a74';
 
-      const cashInRes = await request(app.getHttpServer())
+      const cashInRes = (await request(app.getHttpServer() as unknown as Server)
         .post('/cash-in')
         .set('x-idempotency-key', idempotencyKey)
         .send({
@@ -164,7 +170,7 @@ describe('Wallet Cash-In Flow & Error Scenarios (E2E)', () => {
           amount: 50,
           currency: 'PEN',
           payment_method: 'card',
-        });
+        })) as unknown as ApiResponse;
 
       const cashInData = cashInRes.body.data || cashInRes.body;
       const operationId = cashInData.operation_id;
@@ -173,19 +179,21 @@ describe('Wallet Cash-In Flow & Error Scenarios (E2E)', () => {
         cashInData.providerReference ||
         'ref_provider_000';
 
-      const webhookRes = await request(app.getHttpServer())
+      const webhookRes = (await request(
+        app.getHttpServer() as unknown as Server,
+      )
         .post('/webhooks/payment')
         .send({
           operation_id: operationId,
           provider_reference: providerRef,
           outcome: 'failed',
-        });
+        })) as unknown as ApiResponse;
 
       expect([200, 201]).toContain(webhookRes.status);
     });
 
     it('9. Debe retornar 404/400 si el webhook referencia una operación inexistente', async () => {
-      await request(app.getHttpServer())
+      await request(app.getHttpServer() as unknown as Server)
         .post('/webhooks/payment')
         .send({
           operation_id: 'op_non_existent_12345',
