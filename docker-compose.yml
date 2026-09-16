@@ -8,6 +8,11 @@ services:
     container_name: ligo_cashin_app
     ports:
       - "3000:3000"
+    volumes:
+      - .:/home/node/app
+      - /home/node/app/node_modules
+      - /home/node/app/coverage  
+      - /home/node/app/dist
     environment:
       - NODE_ENV=development
       - PORT=3000

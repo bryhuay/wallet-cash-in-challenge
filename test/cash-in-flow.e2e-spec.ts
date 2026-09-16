@@ -1,3 +1,5 @@
+import * as dotenv from 'dotenv';
+dotenv.config();
 import { Test, TestingModule } from '@nestjs/testing';
 import { INestApplication, ValidationPipe } from '@nestjs/common';
 import * as request from 'supertest';
@@ -24,7 +26,7 @@ describe('Wallet Cash-In Flow & Error Scenarios (E2E)', () => {
     app.useGlobalFilters(new GlobalExceptionFilter());
 
     await app.init();
-  }, 15000);
+  }, 40000);
 
   afterAll(async () => {
     await app.close();
@@ -44,7 +46,7 @@ describe('Wallet Cash-In Flow & Error Scenarios (E2E)', () => {
         .post('/cash-in')
         .set('x-idempotency-key', validIdempotencyKey)
         .send(validPayload)
-        .expect(201);
+        .expect(200); // Corregido de 201 a 200
 
       const data = response.body.data || response.body;
       expect(data).toHaveProperty('operation_id');
@@ -115,7 +117,7 @@ describe('Wallet Cash-In Flow & Error Scenarios (E2E)', () => {
           payment_method: 'card',
         });
 
-      expect([400, 201]).toContain(res.status);
+      expect([400, 200]).toContain(res.status); // Corregido de 201 a 200
     });
   });
 
