@@ -92,8 +92,6 @@ import { PaymentModule } from '@infrastructure/payment/payment.module';
 })
 export class AppModule implements NestModule {
   configure(consumer: MiddlewareConsumer) {
-    consumer
-      .apply(LoggingAndCorrelationMiddleware)
-      .forRoutes('*');
+    consumer.apply(LoggingAndCorrelationMiddleware).forRoutes('*');
   }
 }

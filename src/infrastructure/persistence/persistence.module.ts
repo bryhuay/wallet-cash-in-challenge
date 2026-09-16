@@ -2,10 +2,7 @@ import { Module } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
 import { APP_CONFIG } from '@config/tokens';
 import { EnvironmentVariables } from '@config/env';
-import {
-  OPERATION_REPOSITORY,
-  WALLET_REPOSITORY,
-} from '@domain/ports/tokens';
+import { OPERATION_REPOSITORY, WALLET_REPOSITORY } from '@domain/ports/tokens';
 import { MongooseOperationRepository } from './mongoose/mongoose-operation.repository';
 import { MongooseWalletRepository } from './mongoose/mongoose-wallet.repository';
 import {

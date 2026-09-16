@@ -8,8 +8,9 @@ export class LoggingAndCorrelationMiddleware implements NestMiddleware {
 
   use(req: Request, res: Response, next: NextFunction) {
     const { method, originalUrl } = req;
-    
-    const correlationId = (req.headers['x-correlation-id'] as string) || randomUUID();
+
+    const correlationId =
+      (req.headers['x-correlation-id'] as string) || randomUUID();
 
     req.headers['x-correlation-id'] = correlationId;
     res.setHeader('x-correlation-id', correlationId);

@@ -9,7 +9,7 @@ import { APP_CONFIG } from './tokens';
     {
       provide: APP_CONFIG,
       useFactory: () => {
-        dotenv.config(); 
+        dotenv.config();
         return loadEnv(process.env);
       },
     },

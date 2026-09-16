@@ -25,8 +25,8 @@ export class GlobalExceptionFilter implements ExceptionFilter {
       exception instanceof HttpException
         ? exception.getResponse()
         : exception instanceof Error
-        ? exception.message
-        : 'Internal server error';
+          ? exception.message
+          : 'Internal server error';
 
     if (exception instanceof Error) {
       this.logger.error(`[${status}] ${exception.message}`, exception.stack);

@@ -67,14 +67,12 @@ describe('Wallet Cash-In Flow & Error Scenarios (E2E)', () => {
     const validIdempotencyKey = 'a1b2c3d4-e5f6-4a5b-8c9d-0e1f2a3b4c5d';
 
     it('3. Debe retornar error de validación si falta la x-idempotency-key', async () => {
-      const res = await request(app.getHttpServer())
-        .post('/cash-in')
-        .send({
-          user_id: 'usr_test_123',
-          amount: 100,
-          currency: 'PEN',
-          payment_method: 'card',
-        });
+      const res = await request(app.getHttpServer()).post('/cash-in').send({
+        user_id: 'usr_test_123',
+        amount: 100,
+        currency: 'PEN',
+        payment_method: 'card',
+      });
 
       expect([400, 500]).toContain(res.status);
     });
@@ -124,7 +122,7 @@ describe('Wallet Cash-In Flow & Error Scenarios (E2E)', () => {
   describe('POST /webhooks/payment (Webhooks de Pasarela)', () => {
     it('7. Debe procesar un webhook exitoso y acreditar el saldo en la billetera', async () => {
       const idempotencyKey = 'f81d4fae-7dec-41d0-a765-00a0c91e6bf6';
-      
+
       const cashInRes = await request(app.getHttpServer())
         .post('/cash-in')
         .set('x-idempotency-key', idempotencyKey)
@@ -137,7 +135,10 @@ describe('Wallet Cash-In Flow & Error Scenarios (E2E)', () => {
 
       const cashInData = cashInRes.body.data || cashInRes.body;
       const operationId = cashInData.operation_id;
-      const providerRef = cashInData.provider_reference || cashInData.providerReference || 'ref_provider_999';
+      const providerRef =
+        cashInData.provider_reference ||
+        cashInData.providerReference ||
+        'ref_provider_999';
 
       const webhookRes = await request(app.getHttpServer())
         .post('/webhooks/payment')
@@ -152,7 +153,7 @@ describe('Wallet Cash-In Flow & Error Scenarios (E2E)', () => {
 
     it('8. Debe procesar un webhook fallido y marcar la operación como FAILED', async () => {
       const idempotencyKey = 'e4e8919b-7521-4f0e-9767-175591325a74';
-      
+
       const cashInRes = await request(app.getHttpServer())
         .post('/cash-in')
         .set('x-idempotency-key', idempotencyKey)
@@ -165,7 +166,10 @@ describe('Wallet Cash-In Flow & Error Scenarios (E2E)', () => {
 
       const cashInData = cashInRes.body.data || cashInRes.body;
       const operationId = cashInData.operation_id;
-      const providerRef = cashInData.provider_reference || cashInData.providerReference || 'ref_provider_000';
+      const providerRef =
+        cashInData.provider_reference ||
+        cashInData.providerReference ||
+        'ref_provider_000';
 
       const webhookRes = await request(app.getHttpServer())
         .post('/webhooks/payment')

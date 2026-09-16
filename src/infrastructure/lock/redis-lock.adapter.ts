@@ -1,10 +1,7 @@
 import { randomUUID } from 'node:crypto';
 import { Inject, Injectable, OnModuleDestroy } from '@nestjs/common';
 import Redis from 'ioredis';
-import {
-  DistributedLock,
-  LockProvider,
-} from '@domain/ports/lock.provider';
+import { DistributedLock, LockProvider } from '@domain/ports/lock.provider';
 import { REDIS_CLIENT } from '@config/tokens';
 
 const RELEASE_LOCK_SCRIPT = `

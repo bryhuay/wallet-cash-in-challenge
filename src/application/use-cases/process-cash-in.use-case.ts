@@ -14,7 +14,6 @@ import {
 } from '../errors/application.error';
 import { IDEMPOTENCY_LOCK_PREFIX } from '../constants/lock.constants';
 
-
 export class ProcessCashInUseCase {
   constructor(
     private readonly operationRepository: OperationRepository,

@@ -34,7 +34,10 @@ export class InvalidIdempotencyKeyError extends DomainError {
 
 export class InvalidUserIdError extends DomainError {
   constructor() {
-    super(DomainErrorCode.INVALID_USER_ID, DOMAIN_ERROR_MESSAGES.INVALID_USER_ID);
+    super(
+      DomainErrorCode.INVALID_USER_ID,
+      DOMAIN_ERROR_MESSAGES.INVALID_USER_ID,
+    );
   }
 }
 
